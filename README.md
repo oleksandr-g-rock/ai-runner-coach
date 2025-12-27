@@ -7,9 +7,9 @@
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![AI Agent](https://img.shields.io/badge/Type-Agentic_Application-purple)
 
-A smart, **AI-powered personal coach** for **Runners, Cyclists, and Triathletes** that lives in Telegram.
+A smart, **AI-powered personal coach** for **Athletes of All Disciplines** that lives in Telegram.
 
-It integrates with **Strava** to analyze your **runs, rides, swims, and hikes**, tracks your athlete profile, checks real-time weather, and provides personalized training advice with a touch of "Rocky Balboa" motivation.
+It integrates with **Strava** to analyze **ANY activity** (Run, Ride, Weight Training, Ski, Hike, Yoga, etc.), tracks your athlete profile, checks real-time weather, and provides personalized training advice with a touch of "Rocky Balboa" motivation.
 
 Built with **Python (Aiohttp)**, **PostgreSQL**, and **LLMs** orchestrated via the standard **`openai` python library** (connecting to OpenRouter) using a robust **Webhook architecture**.
 
@@ -18,17 +18,17 @@ Built with **Python (Aiohttp)**, **PostgreSQL**, and **LLMs** orchestrated via t
 This is not a standard chatbot with hardcoded responses. It is an **Autonomous Agent** powered by Function Calling (Tool Use).
 
 When you send a message, the LLM doesn't just reply; it **thinks** and decides which tools to execute:
-* **Decides to check context:** If you ask "Should I go for a ride today?", it autonomously calls `check_weather(city)` and `check_strava(history)` before answering.
-* **Decides to save memories:** If you say "My knee hurts after cycling", it calls `save_profile_info(data)` to update its long-term memory in PostgreSQL.
+* **Decides to check context:** If you ask "Should I go for a hike today?", it autonomously calls `check_weather(city)` and `check_strava(history)` before answering.
+* **Decides to save memories:** If you say "My knee hurts after squats", it calls `save_profile_info(data)` to update its long-term memory in PostgreSQL.
 * **Decides to talk:** If you just say "Hi", it replies directly without invoking tools.
 
 It acts as a reasoning engine that bridges natural language with external APIs (Strava, Open-Meteo).
 
 ## ✨ Features
 
-* **🧠 Multi-Sport Coaching:** Uses Llama 3.3 to analyze your specific context—whether you are training for a Marathon, a Century Ride, or a Triathlon.
+* **🧠 Universal Coaching:** Uses Llama 3.3 to analyze your specific context—whether you are training for a Marathon, building muscle in the Gym, or enjoying a Ski trip.
 * **🔌 Standardized AI Integration:** Built on top of the standard `from openai import OpenAI` client. This ensures high compatibility and makes it easy to switch between OpenRouter, official OpenAI, or other compatible providers.
-* **🏅 Full Strava Integration:** Connects via OAuth to fetch and analyze **Run, Ride, Swim, and Walk** activities.
+* **🏅 Full Strava Integration:** Connects via OAuth to fetch and analyze **Any activity type** supported by Strava (not just running/cycling, but also Weight Training, Yoga, Crossfit, etc.).
 * **💾 Long-term Memory:** Remembers your age, weight, injuries, PRs, and goals (stored in PostgreSQL).
 * **🌤 Weather Awareness:** Automatically checks weather conditions (wind, rain, temp) for your city before suggesting an outdoor workout.
 * **🗣 Voice Support:** Transcribes voice messages using OpenAI Whisper (or compatible API)—perfect for post-workout notes.
