@@ -1,0 +1,6 @@
+python-telegram-bot==21.9
+openai>=1.0.0
+requests
+psycopg2-binary
+python-dotenv
+aiohttp
