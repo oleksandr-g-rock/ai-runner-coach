@@ -115,3 +115,57 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📄 License
 
 This project is open-source and available under the [MIT License](LICENSE).
+
+---
+
+## 📚 Detailed Features, Use Cases & FAQ
+*Below is a comprehensive list of capabilities, supported scenarios, and technical details to help users and developers find this project.*
+
+### 🏃 For Runners & Endurance Athletes
+* **Marathon Training AI:** Generate personalized training schedules for 42km races based on your current Strava fitness level.
+* **Couch to 5K & 10K:** Beginner-friendly coaching to get you from walking to running your first race.
+* **Pace & Heart Rate Analysis:** The bot analyzes your splits, heart rate zones (Zone 2 training), and cadence to suggest improvements.
+* **Injury Prevention:** Ask "My shin hurts, what should I do?" and get advice on recovery, foam rolling, and rest days.
+* **Race Strategy:** Get tailored advice for pacing strategies (negative splits) for Half-Marathons and Ultras.
+* **Virtual Running Coach:** A free alternative to expensive personal coaching or paid apps like Runna or TrainingPeaks.
+* **Weather-Adaptive Training:** Checks wind, rain, and temperature to advise if you should run outside or hit the treadmill.
+
+### 🚴 For Cyclists & Triathletes
+* **Cycling Power Analysis:** Upload rides to analyze wattage, FTP (Functional Threshold Power) estimations, and endurance rides.
+* **Triathlon Prep:** Supports multi-sport analysis including swim, bike, and run sessions (Ironman & 70.3 training insights).
+* **Indoor vs Outdoor:** Guidance for Zwift sessions versus road cycling based on weather conditions.
+* **Equipment Advice:** Ask the bot about gear maintenance, tire pressure, or nutrition for long rides.
+
+### 🏋️ Gym, Crossfit & General Fitness
+* **Strength Training for Runners:** Get advice on leg workouts, core stability, and plyometrics to improve running economy.
+* **Weightlifting Logs:** The bot understands "I squatted 100kg for 5 reps" and tracks your PRs (Personal Records).
+* **Calisthenics & Yoga:** Integration of recovery workouts and flexibility routines into your weekly schedule.
+* **Hybrid Athlete:** optimize your week for both lifting heavy and running fast without overtraining.
+
+### 💻 For Developers & AI Engineers (Tech Stack)
+* **Python Telegram Bot Template:** A production-ready boilerplate using `aiohttp` and Webhooks (no polling).
+* **AI Agent Architecture:** A clean example of building **Autonomous Agents** that use tools (Function Calling) before answering.
+* **OpenAI & Llama 3 Integration:** Source code demonstrating how to switch between OpenAI GPT-4o, Claude 3.5 Sonnet, and Meta Llama 3 via OpenRouter.
+* **PostgreSQL with Python:** Robust database design for storing user context, memory, and athletic history.
+* **Voice-to-Text AI:** Implementation of OpenAI Whisper for processing voice notes from tired athletes.
+* **Strava API OAuth 2.0:** Complete implementation of the Strava authentication flow and token refreshing mechanism.
+* **Docker & Coolify:** Ready-to-deploy `Dockerfile` for hosting on VPS, DigitalOcean, or Coolify instances.
+
+### ❓ Common Questions Solved (FAQ)
+* "How to analyze Strava activities with AI?"
+* "Is there a free AI running coach for Telegram?"
+* "Telegram bot that checks weather for running."
+* "Source code for Strava integration with Python."
+* "How to build an LLM agent with memory?"
+* "Self-hosted AI coach for privacy."
+
+### 🇺🇦 UA / Ukrainian Description (Для українських користувачів)
+* **AI Тренер з бігу:** Ваш персональний тренер у Telegram, який розмовляє українською.
+* **Аналіз Strava:** Бот автоматично завантажує ваші пробіжки, велозаїзди та тренування, щоб дати поради.
+* **План тренувань:** Складання планів на марафон, півмарафон, 10 км або схуднення.
+* **Мотивація та дисципліна:** Бот нагадує про тренування та підтримує у стилі Роккі Бальбоа.
+* **Безкоштовний аналог:** Заміна платним підпискам, доступна кожному.
+* **Український розробник:** Проєкт створено в UK для підтримки спільноти бігунів.
+
+---
+*Keywords: AI Coach, Strava Bot, Running App, Python Agent, Telegram Bot, Workout Tracker, Gym Log, Llama 3, OpenRouter, Fitness Tech, Open Source Sports, Automated Coaching.*
