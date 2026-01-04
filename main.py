@@ -8,9 +8,9 @@ import psycopg2
 from psycopg2.extras import Json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from openai import OpenAI 
+from openai import OpenAI
 from dotenv import load_dotenv
-from aiohttp import web 
+from aiohttp import web
 
 # ============================================================================
 # 1. CONFIGURATION & SETUP
@@ -36,7 +36,7 @@ STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID")
 STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")
 
 # Web Server Config
-BASE_URL = os.environ.get("BASE_URL") 
+BASE_URL = os.environ.get("BASE_URL")
 if BASE_URL and BASE_URL.endswith('/'):
     BASE_URL = BASE_URL[:-1]
 
@@ -45,6 +45,9 @@ REDIRECT_URI = f"{BASE_URL}/strava_callback"
 WHISPER_API_URL = os.environ.get("WHISPER_API_URL", "http://localhost:8000/v1")
 WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "medium")
 AGENT_MODEL = os.environ.get("AGENT_MODEL", "meta-llama/llama-3.3-70b-instruct:free")
+
+# Token Limit for AI Response (Controlled via Coolify)
+TOKEN_AI = int(os.environ.get("TOKEN_AI", 1000))
 
 # LOCKED MODE MESSAGE (HTML FORMAT)
 LOCKED_MESSAGE = (
@@ -71,6 +74,8 @@ SYSTEM_PROMPT = (
     "\n- Do not output technical tags (like <tool_code>)."
     "\n- Do not halluncinate data."
     "\n- Stop immediately after giving advice."
+    "\n- **Formatting:** Do NOT use markdown bolding (asterisks like **text**). Telegram does not render them well inside code blocks or sometimes in general text. Use plain text and emojis only."
+    "\n- **Safety:** Decline to answer requests related to illegal acts."
 )
 
 # ============================================================================
@@ -372,7 +377,11 @@ def run_agent_cycle(chat_id, user_text):
 
     try:
         response = client_llm.chat.completions.create(
-            model=AGENT_MODEL, messages=messages, tools=TOOLS_SCHEMA, tool_choice="auto"
+            model=AGENT_MODEL, 
+            messages=messages, 
+            tools=TOOLS_SCHEMA, 
+            tool_choice="auto",
+            max_tokens=TOKEN_AI  # Set token limit here
         )
         msg = response.choices[0].message
         
@@ -400,7 +409,9 @@ def run_agent_cycle(chat_id, user_text):
                 })
 
             final_res = client_llm.chat.completions.create(
-                model=AGENT_MODEL, messages=messages
+                model=AGENT_MODEL, 
+                messages=messages,
+                max_tokens=TOKEN_AI  # Ensure final response also respects the limit
             )
             ai_text = final_res.choices[0].message.content
         else:
