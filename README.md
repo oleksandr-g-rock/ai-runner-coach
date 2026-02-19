@@ -31,7 +31,7 @@ It acts as a reasoning engine that bridges natural language with external APIs (
 * **🏅 Full Strava Integration:** Connects via OAuth to fetch and analyze **Any activity type** supported by Strava (not just running/cycling, but also Weight Training, Yoga, Crossfit, etc.).
 * **💾 Long-term Memory:** Remembers your age, weight, injuries, PRs, and goals (stored in PostgreSQL).
 * **🌤 Weather Awareness:** Automatically checks weather conditions (wind, rain, temp) for your city before suggesting an outdoor workout.
-* **🗣 Voice Support:** Transcribes voice messages using OpenAI Whisper (or compatible API)—perfect for post-workout notes.
+* **🗣 Voice Support:** Transcribes voice messages using Groq's Whisper API—perfect for post-workout notes. Supports Ukrainian, English, and auto-detection of other languages.
 * **⚡ Webhook Architecture:** Fast, efficient, and serverless-ready (no polling).
 * **🔒 Private Mode:** Includes an "Invite Code" system to restrict access to authorized users only.
 
@@ -71,7 +71,7 @@ Set the following variables in your deployment environment (e.g., Coolify or `.e
 | `STRAVA_CLIENT_SECRET` | Strava App Client Secret | `abc12345...` |
 | `BASE_URL` | **HTTPS** URL of your deployed bot | `https://my-bot.com` |
 | `INVITE_CODE` | Password for new users | `RockyBalboa2026` |
-| `WHISPER_API_URL` | URL for Whisper STT API | `http://whisper:8000/v1` |
+| `GROQ_WHISPER_API_KEY` | Groq API Key for voice transcription | `gsk_...` |
 
 ### 🛠 Local Development
 

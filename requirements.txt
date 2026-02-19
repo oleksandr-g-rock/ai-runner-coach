@@ -4,3 +4,4 @@ requests
 psycopg2-binary
 python-dotenv
 aiohttp
+groq>=0.4.0
