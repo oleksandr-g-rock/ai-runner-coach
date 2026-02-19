@@ -624,7 +624,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(response)
     except Exception as e:
         logger.error(f"Voice Error: {e}")
-        await status.edit_text("❌ Error processing voice message.")
+        await status.edit_text("❌ Error processing voice message. Please try again or contact support if the issue persists.")
     finally:
         if os.path.exists(temp_file): os.remove(temp_file)
 

@@ -17,7 +17,14 @@ class TranscriptionService:
         Initialize the transcription service.
         
         Args:
-            api_key: Groq API key. If None, reads from GROQ_WHISPER_API_KEY env variable.
+            api_key: Groq API key. If provided, this takes precedence over the
+                    GROQ_WHISPER_API_KEY environment variable. If None, the service
+                    will attempt to read the key from the GROQ_WHISPER_API_KEY
+                    environment variable.
+                    
+        Raises:
+            ValueError: If neither api_key parameter nor GROQ_WHISPER_API_KEY
+                       environment variable is set.
         """
         self.api_key = api_key or os.environ.get("GROQ_WHISPER_API_KEY")
         if not self.api_key:
@@ -28,6 +35,10 @@ class TranscriptionService:
         """
         Transcribe an audio file to text.
         
+        Note: This method reads the entire file into memory. For typical Telegram
+        voice messages (usually under 1 MB), this is acceptable. The Groq API
+        currently does not support streaming uploads.
+        
         Args:
             audio_file_path: Path to the audio file to transcribe
             language: Optional language code (e.g., 'uk' for Ukrainian, 'en' for English).
@@ -37,7 +48,8 @@ class TranscriptionService:
             str: Transcribed text
             
         Raises:
-            Exception: If transcription fails
+            FileNotFoundError: If the audio file does not exist
+            Exception: If transcription fails due to API errors or other issues
         """
         try:
             with open(audio_file_path, "rb") as file:
