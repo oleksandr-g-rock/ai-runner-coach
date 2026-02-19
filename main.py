@@ -11,6 +11,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from openai import OpenAI
 from dotenv import load_dotenv
 from aiohttp import web
+from transcription_service import create_transcription_service
 
 # ============================================================================
 # 1. CONFIGURATION & SETUP
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 DATABASE_URL = os.environ.get("DATABASE_URL")
+GROQ_WHISPER_API_KEY = os.environ.get("GROQ_WHISPER_API_KEY")
 
 # --- PASSWORD CONFIG ---
 # Default password if not set in env vars.
@@ -42,8 +44,6 @@ if BASE_URL and BASE_URL.endswith('/'):
 
 REDIRECT_URI = f"{BASE_URL}/strava_callback"
 
-WHISPER_API_URL = os.environ.get("WHISPER_API_URL", "http://localhost:8000/v1")
-WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "medium")
 AGENT_MODEL = os.environ.get("AGENT_MODEL", "meta-llama/llama-3.3-70b-instruct:free")
 
 # Token Limit for AI Response (Controlled via Coolify)
@@ -314,7 +314,17 @@ client_llm = OpenAI(
     api_key=OPENROUTER_API_KEY,
     default_headers={"HTTP-Referer": "https://bot.local", "X-Title": "AgentCoach"}
 )
-client_whisper = OpenAI(base_url=WHISPER_API_URL, api_key="sk-dummy")
+
+# Initialize Groq transcription service
+transcription_service = None
+if GROQ_WHISPER_API_KEY:
+    try:
+        transcription_service = create_transcription_service()
+        logger.info("✅ Groq transcription service initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize transcription service: {e}")
+else:
+    logger.warning("GROQ_WHISPER_API_KEY not set, voice transcription will not work")
 
 TOOLS_SCHEMA = [
     {
@@ -592,15 +602,21 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     # --------------------
 
+    # Check if transcription service is available
+    if not transcription_service:
+        await update.message.reply_text("❌ Voice transcription is not configured.")
+        return
+
     status = await update.message.reply_text("👂 Listening...")
     temp_file = f"voice_{update.message.voice.file_id}.ogg"
     try:
         new_file = await context.bot.get_file(update.message.voice.file_id)
         await new_file.download_to_drive(temp_file)
+        
+        # Transcribe using Groq
         def transcribe():
-            with open(temp_file, "rb") as f:
-                # removed language="uk" to allow auto-detection
-                return client_whisper.audio.transcriptions.create(model=WHISPER_MODEL, file=f).text
+            return transcription_service.transcribe_audio(temp_file)
+        
         text = await asyncio.to_thread(transcribe)
         await status.edit_text(f"🗣 <i>\"{text}\"</i>", parse_mode="HTML")
         await update.message.chat.send_action("typing")
@@ -608,7 +624,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(response)
     except Exception as e:
         logger.error(f"Voice Error: {e}")
-        await status.edit_text("❌ Error.")
+        await status.edit_text("❌ Error processing voice message.")
     finally:
         if os.path.exists(temp_file): os.remove(temp_file)
 
