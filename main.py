@@ -3,6 +3,7 @@ import asyncio
 import logging
 import time
 import json
+from datetime import datetime, timezone
 import requests
 import psycopg2
 from psycopg2.extras import Json
@@ -60,20 +61,25 @@ LOCKED_MESSAGE = (
 # SYSTEM PROMPT (ENGLISH - ADAPTIVE)
 SYSTEM_PROMPT = (
     "You are ActiveBuddy, a personal AI sports coach. You help with ALL sports and physical activities supported by Strava."
-    "You have access to the user's profile and data."
+    " You have access to the user's profile and data."
     "\n\nYOUR INSTRUCTIONS:"
     "\n1. **Strava:** If you see 'STRAVA: NOT CONNECTED' and the user asks for analysis, tell them to use /connect_strava."
-    "\n2. **Memory (CRITICAL):** Whenever the user mentions ANY new fact about themselves (age, discomfort, weight, preferences, city, new PRs, equipment changes, injuries, goals, **PRs**) — "
-    "YOU MUST IMMEDIATELY call the `save_profile_info` tool BEFORE replying with text. Do not just say you saved it — actually use the tool."
-    "\n3. **Confirmation:** After calling `save_profile_info`, explicitly confirm exactly what was saved in your text response."
+    "\n2. **Memory (CRITICAL):** ONLY save facts directly related to sport, fitness, and health using `save_profile_info`."
+    " Save: age, weight, height, city/location, injuries, PRs, race goals, training preferences, equipment, fitness level."
+    " DO NOT save: casual conversations, social plans, food/drink mentions, concerts, entertainment, opinions, or everyday chat."
+    " If the user explicitly asks you to forget or delete something, remove that key from the profile by saving it with an empty value."
+    " Do not just say you saved it — actually use the tool. After calling `save_profile_info`, confirm what was saved."
     "\n3. **Weather:** To check weather, use the city stored in the profile. If no city is saved, ask the user."
     "\n4. **Analysis:** If the user asks for advice or a plan, use `check_weather` and `check_strava` tools. Analyze ANY activity type present in the history (Run, Ride, Swim, Ski, Hike, Weight Training, etc.)."
     "\n5. **Context:** Always consider profile data when giving advice (e.g., don't suggest a heavy leg workout if the user just did a hard hike or long ride)."
-    "\n6. **Language & Tone:** Your default language is **English**. However, **if the user speaks Ukrainian (or another language), reply in the user's language**. Be friendly, energetic, and concise."
-    "\n7. **Persona:** You are a supportive partner. End with a short motivational quote (Rocky Balboa style)."
+    "\n6. **Time Awareness (CRITICAL):** The current date and time are provided in the CURRENT DATE/TIME field below."
+    " Use this to understand temporal context. Messages in the conversation history include timestamps — pay attention to them."
+    " When the user says 'yesterday', 'last week', etc., interpret these relative to the CURRENT date/time, NOT relative to the last message."
+    "\n7. **Language & Tone:** Your default language is **English**. However, **if the user speaks Ukrainian (or another language), reply in the user's language**. Be friendly, energetic, and concise."
+    "\n8. **Persona:** You are a supportive partner. End with a short motivational quote (Rocky Balboa style)."
     "\n\nRESTRICTIONS:"
     "\n- Do not output technical tags (like <tool_code>)."
-    "\n- Do not halluncinate data."
+    "\n- Do not hallucinate data."
     "\n- Stop immediately after giving advice."
     "\n- **Formatting:** Do NOT use markdown bolding (asterisks like **text**). Telegram does not render them well inside code blocks or sometimes in general text. Use plain text and emojis only."
     "\n- **Safety:** Decline to answer requests related to illegal acts."
@@ -353,11 +359,11 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "save_profile_info",
-            "description": "Save facts about the user.",
+            "description": "Save sport, fitness, and health related facts about the user (e.g., age, weight, city, injuries, PRs, goals, equipment). Do NOT save casual or non-sport info.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "info_json": {"type": "string", "description": "JSON string with data."}
+                    "info_json": {"type": "string", "description": "JSON string with sport/fitness related data to save."}
                 },
                 "required": ["info_json"]
             }
@@ -373,15 +379,23 @@ def run_agent_cycle(chat_id, user_text):
     strava_tokens = db.get_strava_tokens(chat_id)
     strava_status = "CONNECTED ✅" if strava_tokens else "NOT CONNECTED ❌"
 
+    now = datetime.now(timezone.utc)
+    current_time_str = now.strftime("%Y-%m-%d %H:%M UTC")
+
     system_msg_content = SYSTEM_PROMPT
-    system_msg_content += f"\n\nSTATUS STRAVA: {strava_status}"
+    system_msg_content += f"\n\nCURRENT DATE/TIME: {current_time_str}"
+    system_msg_content += f"\nSTATUS STRAVA: {strava_status}"
     if profile:
         system_msg_content += f"\nCURRENT USER PROFILE:\n{json.dumps(profile, ensure_ascii=False)}"
 
-    clean_history = [
-        {"role": m["role"], "content": m["content"]} 
-        for m in history if m["role"] in ["user", "assistant"] and m.get("content")
-    ][-10:]
+    clean_history = []
+    for m in history:
+        if m["role"] in ["user", "assistant"] and m.get("content"):
+            entry = {"role": m["role"], "content": m["content"]}
+            if m.get("timestamp"):
+                entry["content"] = f"[{m['timestamp']}] {m['content']}"
+            clean_history.append(entry)
+    clean_history = clean_history[-10:]
 
     messages = [{"role": "system", "content": system_msg_content}] + clean_history
     messages.append({"role": "user", "content": user_text})
@@ -432,8 +446,9 @@ def run_agent_cycle(chat_id, user_text):
         logger.error(f"LLM Error: {e}")
         ai_text = "Sorry, technical glitch."
 
-    clean_history.append({"role": "user", "content": user_text})
-    clean_history.append({"role": "assistant", "content": ai_text})
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    clean_history.append({"role": "user", "content": user_text, "timestamp": timestamp})
+    clean_history.append({"role": "assistant", "content": ai_text, "timestamp": timestamp})
     db.update_history(chat_id, clean_history)
 
     return ai_text
@@ -643,7 +658,7 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🤷‍♂️ Profile is empty.")
     else:
         formatted_json = json.dumps(profile, indent=2, ensure_ascii=False)
-        await update.message.reply_text(f"📂 **PROFILE:**\n<pre>{formatted_json}</pre>", parse_mode="HTML")
+        await update.message.reply_text(f"📂 <b>PROFILE:</b>\n<pre>{formatted_json}</pre>", parse_mode="HTML")
 
 async def show_last_strava(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message: return
