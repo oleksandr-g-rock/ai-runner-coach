@@ -610,5 +610,107 @@ class TestHandleMessage(unittest.TestCase):
         return context
 
 
+class TestTopicFilter(unittest.TestCase):
+    """Tests for TOPIC_ID filtering behaviour."""
+
+    def _create_mock_update(self, text, thread_id=None):
+        """Helper to create a mock Update with optional message_thread_id."""
+        update = Mock(spec=Update)
+        message = AsyncMock(spec=Message)
+        chat = Mock(spec=Chat)
+
+        message.chat = chat
+        chat.id = 12345
+        message.chat_id = 12345
+        message.text = text
+        message.message_thread_id = thread_id
+        message.reply_text = AsyncMock()
+        message.chat.send_action = AsyncMock()
+
+        update.message = message
+        return update
+
+    def _create_mock_context(self):
+        context = Mock(spec=ContextTypes.DEFAULT_TYPE)
+        return context
+
+    @patch.dict(os.environ, test_env)
+    @patch('transcription_service.Groq')
+    @patch('psycopg2.connect')
+    def test_handle_message_ignored_when_wrong_topic(self, mock_db_conn, mock_groq):
+        """When TOPIC_ID is set, messages from a different topic must be silently ignored."""
+        import main
+
+        mock_db = Mock()
+
+        with patch.object(main, 'TOPIC_ID', 100), \
+             patch.object(main, 'db', mock_db):
+            update = self._create_mock_update("hello", thread_id=999)
+            context = self._create_mock_context()
+
+            asyncio.run(main.handle_message(update, context))
+
+            mock_db.get_profile.assert_not_called()
+            update.message.reply_text.assert_not_called()
+
+    @patch.dict(os.environ, test_env)
+    @patch('transcription_service.Groq')
+    @patch('psycopg2.connect')
+    def test_handle_message_processed_when_correct_topic(self, mock_db_conn, mock_groq):
+        """When TOPIC_ID is set, messages from the correct topic must be processed."""
+        import main
+
+        mock_db = Mock()
+        mock_db.get_profile.return_value = {}
+
+        with patch.object(main, 'TOPIC_ID', 100), \
+             patch.object(main, 'db', mock_db):
+            update = self._create_mock_update("RockyBalboa2026", thread_id=100)
+            context = self._create_mock_context()
+
+            asyncio.run(main.handle_message(update, context))
+
+            mock_db.get_profile.assert_called_once()
+
+    @patch.dict(os.environ, test_env)
+    @patch('transcription_service.Groq')
+    @patch('psycopg2.connect')
+    def test_handle_message_no_topic_filter_processes_all(self, mock_db_conn, mock_groq):
+        """When TOPIC_ID is not set, all messages must be processed regardless of thread_id."""
+        import main
+
+        mock_db = Mock()
+        mock_db.get_profile.return_value = {}
+
+        with patch.object(main, 'TOPIC_ID', None), \
+             patch.object(main, 'db', mock_db):
+            # Message with a thread_id should still be processed when no TOPIC_ID configured
+            update = self._create_mock_update("RockyBalboa2026", thread_id=42)
+            context = self._create_mock_context()
+
+            asyncio.run(main.handle_message(update, context))
+
+            mock_db.get_profile.assert_called_once()
+
+    @patch.dict(os.environ, test_env)
+    @patch('transcription_service.Groq')
+    @patch('psycopg2.connect')
+    def test_handle_message_ignored_when_no_thread_id_but_topic_set(self, mock_db_conn, mock_groq):
+        """When TOPIC_ID is set, messages with no thread_id (not from a topic) must be ignored."""
+        import main
+
+        mock_db = Mock()
+
+        with patch.object(main, 'TOPIC_ID', 100), \
+             patch.object(main, 'db', mock_db):
+            update = self._create_mock_update("hello", thread_id=None)
+            context = self._create_mock_context()
+
+            asyncio.run(main.handle_message(update, context))
+
+            mock_db.get_profile.assert_not_called()
+            update.message.reply_text.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main()

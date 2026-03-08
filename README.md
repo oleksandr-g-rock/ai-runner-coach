@@ -98,6 +98,7 @@ User → Telegram → Webhook (POST /telegram)
 | `GROQ_WHISPER_API_KEY` | Groq API Key for voice transcription | `gsk_...` |
 | `AGENT_MODEL` | LLM model name (optional) | `meta-llama/llama-3.3-70b-instruct:free` |
 | `TOKEN_AI` | Max tokens for AI response (optional) | `1000` |
+| `TOPIC_ID` | Telegram topic (thread) ID the bot should respond to (optional) | `12` |
 
 ### 🛠 Local Development
 

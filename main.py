@@ -50,6 +50,10 @@ AGENT_MODEL = os.environ.get("AGENT_MODEL", "meta-llama/llama-3.3-70b-instruct:f
 # Token Limit for AI Response (Controlled via Coolify)
 TOKEN_AI = int(os.environ.get("TOKEN_AI", 1000))
 
+# Topic filter: if set, the bot only responds to messages from this Telegram topic (thread) ID.
+_topic_id_raw = os.environ.get("TOPIC_ID")
+TOPIC_ID = int(_topic_id_raw) if _topic_id_raw else None
+
 # LOCKED MODE MESSAGE (HTML FORMAT)
 LOCKED_MESSAGE = (
     "👋 <b>Hello!</b> I am ActiveBuddy — your Personal AI Sports Coach.\n\n"
@@ -529,9 +533,16 @@ async def on_shutdown(web_app):
 # 6. BOT HANDLERS & COMMANDS
 # ============================================================================
 
+def _is_allowed_topic(message) -> bool:
+    """Return True if the message belongs to the configured topic (or no topic filter is set)."""
+    if TOPIC_ID is None:
+        return True
+    return getattr(message, 'message_thread_id', None) == TOPIC_ID
+
 async def connect_strava_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Ignore technical updates
     if not update.message: return
+    if not _is_allowed_topic(update.message): return
 
     chat_id = str(update.message.chat_id)
 
@@ -541,7 +552,7 @@ async def connect_strava_command(update: Update, context: ContextTypes.DEFAULT_T
         await update.message.reply_text(LOCKED_MESSAGE, parse_mode="HTML")
         return
     # --------------------
-    
+
     if not STRAVA_CLIENT_ID or not REDIRECT_URI:
         await update.message.reply_text("❌ Configuration Error.")
         return
@@ -562,9 +573,10 @@ async def connect_strava_command(update: Update, context: ContextTypes.DEFAULT_T
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message: return
+    if not _is_allowed_topic(update.message): return
 
     chat_id = str(update.message.chat_id)
-    
+
     # --- ACCESS CHECK ---
     profile = db.get_profile(chat_id)
     if not profile.get("is_allowed"):
@@ -578,6 +590,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 1. Ignore technical updates (no text)
     if not update.message or not update.message.text:
         return
+    if not _is_allowed_topic(update.message): return
 
     chat_id = str(update.message.chat_id)
     user_text = update.message.text
@@ -607,6 +620,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message: return
+    if not _is_allowed_topic(update.message): return
 
     chat_id = str(update.message.chat_id)
 
@@ -645,6 +659,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message: return
+    if not _is_allowed_topic(update.message): return
     chat_id = str(update.message.chat_id)
     
     # --- ACCESS CHECK ---
@@ -662,6 +677,7 @@ async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def show_last_strava(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message: return
+    if not _is_allowed_topic(update.message): return
     chat_id = str(update.message.chat_id)
 
     # --- ACCESS CHECK ---
